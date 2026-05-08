@@ -563,6 +563,9 @@ export async function speakShout(what: string, labelOverride?: string): Promise<
   if (isMuted) return;
   // Cancel·la qualsevol àudio anterior per evitar que se superposen dues veus.
   cancelSpeech();
+  // Petit retard perquè l'àudio sone una mica després del cartell visual.
+  await new Promise<void>((resolve) => setTimeout(resolve, 100));
+  if (isMuted) return;
   const lang = getPreferredLang();
   const dict = lang === "es" ? SHOUT_TEXT_ES : SHOUT_TEXT_CA;
   const text = labelOverride ?? dict[what];
