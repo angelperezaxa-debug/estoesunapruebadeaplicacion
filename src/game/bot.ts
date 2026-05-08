@@ -824,7 +824,7 @@ function decideTrucResponse(
     // Mode sincer (bluffRate === 0): contra-envit determinista. Només envida
     // si té possibilitats reals (≥31). Sense multiplicadors aleatoris.
     if (bluffRate === 0) {
-      if (myEnvit >= 31) return { type: "shout", what: "envit" };
+      if (myEnvit >= 30) return { type: "shout", what: "envit" };
     } else {
     if (myEnvit >= 30 && Math.random() < 0.85 * tuning.callPropensity) return { type: "shout", what: "envit" };
     if (myEnvit >= 27 && Math.random() < 0.55 * tuning.callPropensity) return { type: "shout", what: "envit" };
