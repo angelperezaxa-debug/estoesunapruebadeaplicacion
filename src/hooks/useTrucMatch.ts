@@ -939,6 +939,113 @@ export function useTrucMatch(options: UseTrucMatchOptions = {}) {
       }
     }
 
+    // "Truc i passe!": el rival ha cantat truc en la 1a baza sense haver-se
+    // envidat. El bot, abans de respondre al truc, pot envidar (l'engine ho
+    // permet ara). Si té envit alt (≥30) envida directament; en cas
+    // contrari, consulta al company "Vols envidar?" i decideix segons la
+    // resposta.
+    const trucEnvitConsultKey = `truc-envit-consult-${match.history.length}-${botPlayer}`;
+    if (
+      isResponseTurn &&
+      r.trucState.kind === "pending" &&
+      !consultStartedRef.current.has(trucEnvitConsultKey) &&
+      !consultAdviceRef.current.has(trucEnvitConsultKey)
+    ) {
+      const actsTE = legalActions(match, botPlayer);
+      const canEnvitTE = actsTE.some(
+        (a) => a.type === "shout" && a.what === "envit",
+      );
+      if (canEnvitTE && sayRef.current) {
+        const myEnvitNow = playerTotalEnvit(r, botPlayer);
+        const partnerSeatTE = partnerOf(botPlayer);
+        const partnerIsBotTE = partnerSeatTE !== HUMAN;
+
+        if (myEnvitNow >= 30) {
+          // Fast-path: envida directament sense consultar.
+          consultStartedRef.current.add(trucEnvitConsultKey);
+          consultAdviceRef.current.set(trucEnvitConsultKey, "neutral");
+          scheduleConsultTimer(() => {
+            const envit = legalActions(matchRef.current, botPlayer).find(
+              (a) => a.type === "shout" && a.what === "envit",
+            );
+            if (envit) dispatch(botPlayer, envit);
+          }, CONSULT_DECIDE_DELAY_MS);
+          return;
+        }
+
+        // Consulta al company.
+        consultStartedRef.current.add(trucEnvitConsultKey);
+        const finalizeAfterTE = (instruction: ChatPhraseId | null) => {
+          consultAdviceRef.current.set(trucEnvitConsultKey, "neutral");
+          scheduleConsultTimer(() => {
+            const acts2 = legalActions(matchRef.current, botPlayer);
+            const envitAct = acts2.find(
+              (a) => a.type === "shout" && a.what === "envit",
+            );
+            if (
+              envitAct &&
+              (instruction === "envida" ||
+                instruction === "si" ||
+                instruction === "si-tinc-n")
+            ) {
+              dispatch(botPlayer, envitAct);
+              return;
+            }
+            const hints = buildHints();
+            const action = botDecide(
+              matchRef.current,
+              botPlayer,
+              cachedAdvice,
+              hints,
+              tuningRef.current,
+              bluffRateRef.current,
+            );
+            if (action) dispatch(botPlayer, action);
+          }, CONSULT_DECIDE_DELAY_MS);
+        };
+        scheduleConsultTimer(() => {
+          sayRef.current?.(botPlayer, "vols-envide");
+          if (partnerIsBotTE) {
+            const answer = partnerAnswerFor(
+              match,
+              partnerSeatTE,
+              "vols-envide",
+              bluffRateRef.current,
+            );
+            const answerVars =
+              answer === "si-tinc-n"
+                ? { n: playerTotalEnvit(r, partnerSeatTE) }
+                : undefined;
+            scheduleConsultTimer(() => {
+              sayRef.current?.(partnerSeatTE, answer, undefined, answerVars);
+              finalizeAfterTE(answer);
+            }, CONSULT_BOT_ANSWER_DELAY_MS);
+          } else {
+            const tid = window.setTimeout(
+              () => finalizeAfterTE(null),
+              CONSULT_HUMAN_TIMEOUT_MS,
+            ) as unknown as number;
+            pendingHumanAnswerRef.current = {
+              botPlayer,
+              consultKey: trucEnvitConsultKey,
+              timer: tid,
+              resolve: (ans) => {
+                if (
+                  pendingHumanAnswerRef.current?.consultKey !==
+                  trucEnvitConsultKey
+                )
+                  return;
+                window.clearTimeout(pendingHumanAnswerRef.current.timer);
+                pendingHumanAnswerRef.current = null;
+                finalizeAfterTE(ans);
+              },
+            };
+          }
+        }, CONSULT_QUESTION_DELAY_MS);
+        return;
+      }
+    }
+
     const buildHints = () => {
       const hints: {
         cardHint?: CardHint;
