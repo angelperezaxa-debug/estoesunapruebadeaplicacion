@@ -881,13 +881,45 @@ function decideTrucResponse(
     return { type: "shout", what: "no-vull" };
   }
 
-  if (canRaiseSafely && (hasBothTopAces || strength >= raiseStrength)) {
+  // Regla dura: no pujar a retruc/quatre val si NO hem guanyat la 1a
+  // baza, només em queda 1 carta (top o 3) i tampoc estem guanyant la 2a.
+  let blockRaiseWeakHand = false;
+  {
+    const firstTrickResp = r.tricks[0];
+    const wonFirstStrict =
+      !!firstTrickResp && firstTrickResp.parda !== true &&
+      firstTrickResp.winner !== undefined && teamOf(firstTrickResp.winner!) === myTeam;
+    if (!wonFirstStrict && hand.length === 1) {
+      const onlyCard = hand[0]!;
+      const isTopOrThree =
+        (onlyCard as any).rank === 3 ||
+        ((onlyCard as any).rank === 7 && ((onlyCard as any).suit === "oros" || (onlyCard as any).suit === "espases")) ||
+        ((onlyCard as any).rank === 1 && ((onlyCard as any).suit === "bastos" || (onlyCard as any).suit === "espases"));
+      const secondTrickResp = r.tricks[1];
+      let teamWinningSecond = false;
+      if (secondTrickResp) {
+        if (secondTrickResp.winner !== undefined && secondTrickResp.parda !== true) {
+          teamWinningSecond = teamOf(secondTrickResp.winner!) === myTeam;
+        } else if (secondTrickResp.cards.length > 0 && secondTrickResp.winner === undefined) {
+          const leader = secondTrickResp.cards.reduce(
+            (best, tc) =>
+              best === null || cardStrength(tc.card as any) > cardStrength(best.card as any) ? tc : best,
+            null as { player: PlayerId; card: Card } | null,
+          );
+          if (leader) teamWinningSecond = teamOf(leader.player) === myTeam;
+        }
+      }
+      if (isTopOrThree && !teamWinningSecond) blockRaiseWeakHand = true;
+    }
+  }
+
+  if (!blockRaiseWeakHand && canRaiseSafely && (hasBothTopAces || strength >= raiseStrength)) {
     return raise!;
   }
-  if (canRaiseSafely && topCards >= 2 && myWinsSoFar >= 1) {
+  if (!blockRaiseWeakHand && canRaiseSafely && topCards >= 2 && myWinsSoFar >= 1) {
     return raise!;
   }
-  if (canRaiseSafely && strength >= raiseStrength - 10 && Math.random() < 0.6) {
+  if (!blockRaiseWeakHand && canRaiseSafely && strength >= raiseStrength - 10 && Math.random() < 0.6) {
     return raise!;
   }
 
