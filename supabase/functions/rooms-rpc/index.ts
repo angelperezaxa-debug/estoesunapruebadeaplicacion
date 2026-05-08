@@ -948,6 +948,34 @@ async function decideOnlineBotAction(
     }
   }
 
+  // "Truc i passe!": davant d'un truc pendent en la 1a baza on encara
+  // és possible envidar (l'engine ho permet), el bot consulta al company
+  // "Vols envidar?" i, segons la resposta, envida o respon al truc. Si
+  // ja té envit alt (≥30) envida directament sense consultar.
+  if (firstPendingResponseActor(state, actor) && r.trucState.kind === "pending") {
+    const actsTE = legalActions(state, actor);
+    const envitActTE = actsTE.find((a) => a.type === "shout" && a.what === "envit");
+    if (envitActTE) {
+      const myEnvitTE = playerTotalEnvit(r, actor);
+      if (myEnvitTE >= 30) {
+        return scheduleBotFlow(intents, {
+          id: flowId,
+          actor,
+          kind: "action",
+          dueAt: dueIso(decideDelayMs),
+          payload: { action: envitActTE },
+        });
+      }
+      return scheduleBotFlow(intents, {
+        id: flowId,
+        actor,
+        kind: "truc-envit-wait",
+        dueAt: dueIso(questionDelayMs),
+        payload: { stage: "ask", partner: partnerOf(actor) },
+      });
+    }
+  }
+
   const shouldConsult =
     (isPlayCardTurn(state, actor) || firstPendingResponseActor(state, actor)) &&
     shouldConsultPartner(state, actor, tuning);
