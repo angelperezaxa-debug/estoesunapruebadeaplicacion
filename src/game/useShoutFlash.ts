@@ -124,17 +124,34 @@ export function useShoutFlashes(match: MatchState | null, disabled = false): Sho
         const TRUC_SHOUTS: ReadonlySet<ShoutKind> = new Set([
           "truc", "retruc", "quatre", "joc-fora",
         ]);
-        const AUDIO_LEAD_MS = TRUC_SHOUTS.has(what) ? 600 : 700;
-        const speakPromise = SPOKEN_SHOUTS.has(what)
-          ? speakShout(what, labelOverride).catch(() => undefined)
-          : Promise.resolve();
-        await new Promise<void>((r) => {
-          const t = window.setTimeout(r, AUDIO_LEAD_MS) as unknown as number;
-          timersRef.current.push(t);
-        });
-        if (token.cancelled) return;
-        visibleRef.current = [{ player, what, labelOverride }];
-        setFlashes(visibleRef.current);
+        // Per als cants de "Vull" / "No vull" la veu s'ha d'escoltar exactament
+        // quan apareix el cartell central (sense avançar-la). Per a la resta de
+        // cants mantenim un petit "lead" perquè la veu i el cartell coincidisquen
+        // perceptualment (la veu té un xicotet retard d'arrencada del TTS).
+        const SYNC_WITH_CARD: ReadonlySet<ShoutKind> = new Set(["vull", "no-vull"]);
+        const AUDIO_LEAD_MS = SYNC_WITH_CARD.has(what)
+          ? 0
+          : (TRUC_SHOUTS.has(what) ? 600 : 700);
+        const speakNow = () =>
+          SPOKEN_SHOUTS.has(what)
+            ? speakShout(what, labelOverride).catch(() => undefined)
+            : Promise.resolve();
+        let speakPromise: Promise<void>;
+        if (AUDIO_LEAD_MS > 0) {
+          speakPromise = speakNow();
+          await new Promise<void>((r) => {
+            const t = window.setTimeout(r, AUDIO_LEAD_MS) as unknown as number;
+            timersRef.current.push(t);
+          });
+          if (token.cancelled) return;
+          visibleRef.current = [{ player, what, labelOverride }];
+          setFlashes(visibleRef.current);
+        } else {
+          // Mostrem el cartell i disparem la veu al mateix instant.
+          visibleRef.current = [{ player, what, labelOverride }];
+          setFlashes(visibleRef.current);
+          speakPromise = speakNow();
+        }
         const startedAt = Date.now();
         await speakPromise;
         if (token.cancelled) return;
