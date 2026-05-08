@@ -881,6 +881,15 @@ export function useTrucMatch(options: UseTrucMatchOptions = {}) {
               );
               if (renvit) { dispatch(botPlayer, renvit); return; }
             }
+            // Si el company diu "no" a "Vols tornar a envidar?", el bot
+            // ha de rebutjar l'envit del rival amb "No vull" (no té sentit
+            // acceptar quan el company ja ha indicat que no en té).
+            if (instruction === "no") {
+              const noVull = legalActions(matchRef.current, botPlayer).find(
+                (a) => a.type === "shout" && a.what === "no-vull",
+              );
+              if (noVull) { dispatch(botPlayer, noVull); return; }
+            }
             // Altrament, decisió normal d'envit.
             const hints = buildHints();
             const action = botDecide(matchRef.current, botPlayer, cachedAdvice, hints, tuningRef.current, bluffRateRef.current);

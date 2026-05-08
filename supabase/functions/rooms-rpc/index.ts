@@ -600,13 +600,26 @@ async function decideOnlineBotAction(
           actor,
           kind: "consult-decide",
           dueAt: dueIso(decideDelayMs),
-          payload: { question, partner, advice: adviceFromAnswer(answer, question) },
+          payload: {
+            question,
+            partner,
+            advice: adviceFromAnswer(answer, question),
+            // Si el company respon "no" a "Vols tornar a envidar?", el bot
+            // ha de rebutjar l'envit del rival (no té sentit acceptar).
+            forceNoVull: question === "vols-tornar-envidar" && answer === "no",
+          },
         });
         return null;
       }
       case "consult-decide": {
         clearBotFlow(intents);
         const advice = coerceAdvice(payload.advice);
+        if (payload.forceNoVull === true) {
+          const noVull = legalActions(state, actor).find(
+            (a) => a.type === "shout" && a.what === "no-vull",
+          );
+          if (noVull) return noVull;
+        }
         return botDecide(state, actor, advice, hintsForBot(intents, actor), tuning, bluffRate);
       }
       case "second-wait": {
@@ -842,6 +855,44 @@ async function decideOnlineBotAction(
     // Ja consultat: decideix directament.
     const action = botDecide(state, actor, "neutral", hintsForBot(intents, actor), tuning, bluffRate);
     return action ? scheduleBotFlow(intents, { id: flowId, actor, kind: "action", dueAt: dueIso(decideDelayMs), payload: { action } }) : null;
+  }
+
+  // Fast-path: davant d'un envit del rival (no falta), si el bot té 33
+  // d'envit o 32 essent mà sobre el caller, RENVIDA directament sense
+  // consultar el company.
+  if (
+    firstPendingResponseActor(state, actor) &&
+    r.envitState.kind === "pending" &&
+    r.envitState.level !== "falta"
+  ) {
+    const myEnvitNow = playerTotalEnvit(r, actor);
+    const acts = legalActions(state, actor);
+    const renvitAct = acts.find(
+      (a) => a.type === "shout" && (a.what === "renvit" || a.what === "falta-envit"),
+    );
+    const partnerSeat = partnerOf(actor);
+    const partnerRejected = (r.envitState.rejectedBy ?? []).includes(partnerSeat);
+    let manoPriorityOverCaller = false;
+    const callerEnv = r.envitState.calledBy;
+    let pm: PlayerId = r.mano;
+    for (let i = 0; i < 4; i++) {
+      if (pm === actor) { manoPriorityOverCaller = true; break; }
+      if (pm === callerEnv) { manoPriorityOverCaller = false; break; }
+      pm = ((pm + 1) % 4) as PlayerId;
+    }
+    const shouldRenvitDirect =
+      !!renvitAct &&
+      !partnerRejected &&
+      (myEnvitNow >= 33 || (myEnvitNow === 32 && manoPriorityOverCaller));
+    if (shouldRenvitDirect) {
+      return scheduleBotFlow(intents, {
+        id: flowId,
+        actor,
+        kind: "action",
+        dueAt: dueIso(decideDelayMs),
+        payload: { action: renvitAct },
+      });
+    }
   }
 
   const shouldConsult =
