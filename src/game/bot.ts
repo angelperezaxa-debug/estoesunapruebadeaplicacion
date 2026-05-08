@@ -1687,12 +1687,41 @@ function choosePlayCard(
   }
   if (playStrength === "high") {
     // El company ha dit "A tu!" / "No tinc res": demana que jo intente
-    // guanyar la baza. Però si la meua carta més alta no és suficient
-    // per a superar la millor carta ja jugada en la mesa, no té sentit
-    // cremar-la — la guarde per a una baza posterior i tire la més baixa.
+    // guanyar la baza. En la 1a baza, si tinc una carta TOP (manilla
+    // d'oros, manilla d'espases, As bastos o As espases) o un 3 que
+    // guanyen o empardin la millor carta ja jugada en la mesa, juga
+    // PREFERENTMENT la carta top; en defecte, juga el 3. Així no es
+    // crema una carta forta innecessàriament: només es treu si serveix.
     const tableBest = trick.cards.length > 0
       ? trick.cards.reduce((mx, tc) => Math.max(mx, cardStrength(tc.card)), -1)
       : -1;
+    if (r.tricks.length === 1) {
+      const isTopCardATu = (c: Card) =>
+        (c.rank === 1 && (c.suit === "bastos" || c.suit === "espases")) ||
+        (c.rank === 7 && (c.suit === "espases" || c.suit === "oros"));
+      // Cartes top que guanyen O empardin la mesa (tableBest = -1 si la
+      // mesa està buida, en eixe cas qualsevol carta serveix).
+      const winningTops = cards
+        .filter((c) => isTopCardATu(c) && cardStrength(c) >= tableBest)
+        .sort((a, b) => cardStrength(a) - cardStrength(b));
+      if (winningTops.length > 0) {
+        const pick = winningTops[0]!; // la top més baixa que serveix
+        const matchAct = playActions.find((a) => a.cardId === pick.id);
+        if (matchAct) return matchAct;
+      }
+      // En defecte, qualsevol 3 que guanye O empardi la mesa.
+      const winningThrees = cards
+        .filter((c) => c.rank === 3 && cardStrength(c) >= tableBest)
+        .sort((a, b) => cardStrength(a) - cardStrength(b));
+      if (winningThrees.length > 0) {
+        const pick = winningThrees[0]!;
+        const matchAct = playActions.find((a) => a.cardId === pick.id);
+        if (matchAct) return matchAct;
+      }
+    }
+    // Si la meua carta més alta no és suficient per a superar la millor
+    // carta ja jugada en la mesa, no té sentit cremar-la — la guarde per
+    // a una baza posterior i tire la més baixa.
     if (tableBest >= 0 && cardStrength(highest) <= tableBest) {
       return { type: "play-card", cardId: lowest.id };
     }
