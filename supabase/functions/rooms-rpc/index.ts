@@ -307,6 +307,7 @@ interface BotIntents {
       | "consult-answer"
       | "consult-decide"
       | "second-wait"
+      | "truc-envit-wait"
       | "opener-wait"
       | "peu-info"
       | "round-end";
@@ -715,6 +716,55 @@ async function decideOnlineBotAction(
         });
         return null;
       }
+      case "truc-envit-wait": {
+        const stage = String(payload.stage ?? "finalize");
+        const partner = Number(payload.partner) as PlayerId;
+        if (stage === "ask") {
+          await insertBotChat(roomId, actor, "vols-envide");
+          recordBotChat(intents, actor, "vols-envide");
+          if (seatKinds[partner] === "bot") {
+            const answer = partnerAnswerFor(state, partner, "vols-envide", bluffRate);
+            scheduleBotFlow(intents, {
+              id: flowId,
+              actor,
+              kind: "truc-envit-wait",
+              dueAt: dueIso(CONSULT_BOT_ANSWER_DELAY_MS),
+              payload: { stage: "answer", partner, answer },
+            });
+          } else {
+            scheduleBotFlow(intents, {
+              id: flowId,
+              actor,
+              kind: "truc-envit-wait",
+              dueAt: dueIso(CONSULT_HUMAN_TIMEOUT_MS),
+              payload: { stage: "finalize", partner, instruction: null, awaitingHuman: true },
+            });
+          }
+          return null;
+        }
+        if (stage === "answer") {
+          const answer = payload.answer as ChatPhraseId;
+          await insertBotChat(roomId, partner, answer);
+          recordBotChat(intents, partner, answer);
+          const instruction: ChatPhraseId = answer === "si" || answer === "si-tinc-n" ? "envida" : answer;
+          scheduleBotFlow(intents, {
+            id: flowId,
+            actor,
+            kind: "truc-envit-wait",
+            dueAt: dueIso(CONSULT_DECIDE_DELAY_MS),
+            payload: { stage: "finalize", partner, instruction },
+          });
+          return null;
+        }
+        clearBotFlow(intents);
+        const instruction = (payload.instruction as ChatPhraseId | null | undefined) ?? null;
+        const acts = legalActions(state, actor);
+        const envitAct = acts.find((a) => a.type === "shout" && a.what === "envit");
+        if (envitAct && (instruction === "envida" || instruction === "si" || instruction === "si-tinc-n")) {
+          return envitAct;
+        }
+        return botDecide(state, actor, "neutral", hintsForBot(intents, actor), tuning, bluffRate);
+      }
       case "round-end":
         return null;
     }
@@ -894,6 +944,34 @@ async function decideOnlineBotAction(
         kind: "action",
         dueAt: dueIso(decideDelayMs),
         payload: { action: renvitAct },
+      });
+    }
+  }
+
+  // "Truc i passe!": davant d'un truc pendent en la 1a baza on encara
+  // és possible envidar (l'engine ho permet), el bot consulta al company
+  // "Vols envidar?" i, segons la resposta, envida o respon al truc. Si
+  // ja té envit alt (≥30) envida directament sense consultar.
+  if (firstPendingResponseActor(state, actor) && r.trucState.kind === "pending") {
+    const actsTE = legalActions(state, actor);
+    const envitActTE = actsTE.find((a) => a.type === "shout" && a.what === "envit");
+    if (envitActTE) {
+      const myEnvitTE = playerTotalEnvit(r, actor);
+      if (myEnvitTE >= 30) {
+        return scheduleBotFlow(intents, {
+          id: flowId,
+          actor,
+          kind: "action",
+          dueAt: dueIso(decideDelayMs),
+          payload: { action: envitActTE },
+        });
+      }
+      return scheduleBotFlow(intents, {
+        id: flowId,
+        actor,
+        kind: "truc-envit-wait",
+        dueAt: dueIso(questionDelayMs),
+        payload: { stage: "ask", partner: partnerOf(actor) },
       });
     }
   }
