@@ -262,9 +262,15 @@ function botDecideInner(
           if (trucAct && !hints.silentTruc && Math.random() < pTruc) {
             return trucAct;
           }
-          // Alternativa: jugar TAPADA la carta més baixa (sense trucar) per
-          // reservar les cartes fortes per a la 3a baza o per a un possible
-          // truc/retruc posterior.
+          // Alternativa: jugar la carta més baixa per reservar les cartes
+          // fortes per a la 3a baza o per a un possible truc/retruc posterior.
+          // Si l'equip ja ha guanyat la 1a baza i totes les cartes que em
+          // queden són top/3 (allTop o oneThreePlusTop), NO tape: tapar
+          // només té sentit si serveix per a ocultar una carta top o un 3,
+          // però ací TOTES són top/3, així que tapar la més baixa no
+          // amaga res. Es juga descoberta.
+          const coverCard =
+            !(wonFirstTrick2 && (allTop || oneThreePlusTop));
           const playActs = actions.filter(
             (a) => a.type === "play-card",
           ) as Extract<Action, { type: "play-card" }>[];
@@ -275,7 +281,9 @@ function botDecideInner(
             const lowest = sortedByStrength[0]!;
             const matchAct = playActs.find((a) => a.cardId === lowest.id);
             if (matchAct) {
-              return { type: "play-card", cardId: matchAct.cardId, covered: true };
+              return coverCard
+                ? { type: "play-card", cardId: matchAct.cardId, covered: true }
+                : { type: "play-card", cardId: matchAct.cardId };
             }
           }
         }
