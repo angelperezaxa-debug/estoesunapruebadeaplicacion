@@ -533,6 +533,26 @@ export function partnerAnswerFor(
       const highestRival = Math.max(
         ...rivalPlayedCards.map((tc) => cardStrength(tc.card)),
       );
+      const canBeatWithTop = topCards >= 1 && hand.some(
+        (c) =>
+          ((c.rank === 7 && (c.suit === "oros" || c.suit === "espases")) ||
+            (c.rank === 1 && (c.suit === "bastos" || c.suit === "espases"))) &&
+          cardStrength(c) > highestRival,
+      );
+      const canBeatWithThree =
+        threes >= 1 &&
+        hand.some((c) => c.rank === 3 && cardStrength(c) > highestRival);
+      if (canBeatWithTop) {
+        if (lie) return "a-tu";
+        return "vine-a-mi";
+      }
+      // En la 1a baza, si només té un 3 (cap top) i el 3 supera la
+      // millor carta del rival, mai diu "Vine a mi!": diu "Tinc un 3".
+      // Si tampoc el 3 supera, diu "A tu".
+      if (r.tricks.length === 1 && topCards === 0) {
+        if (lie) return "vine-a-mi";
+        return canBeatWithThree ? "tinc-un-tres" : "a-tu";
+      }
       const canBeat = hand.some((c) => cardStrength(c) > highestRival);
       if (canBeat) {
         if (lie) return "a-tu";
