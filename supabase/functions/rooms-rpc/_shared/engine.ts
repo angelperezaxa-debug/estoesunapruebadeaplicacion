@@ -373,11 +373,21 @@ export function legalActions(m: MatchState, player: PlayerId): Action[] {
         (a) => !(a.type === "shout" && (a.what === "retruc" || a.what === "quatre" || a.what === "joc-fora")),
       );
     }
-    // Nota: en versions prèvies, en respondre a un truc cantat a la 1a
-    // baza encara s'oferien opcions d'envit/falta-envit al responder. Això
-    // contradiu la regla del "Truc i passe!": quan algú truca a la 1a baza
-    // sense haver-se envidat encara, l'envit queda passat implícitament i
-    // ja no es pot envidar (ni pel responder ni per ningú) en aquesta mà.
+    // "Truc i passe!" en la 1a baza: el rival pot envidar (o falta-envit)
+    // ABANS de respondre al truc, mentre encara no haja jugat la seua
+    // carta i l'envit no estiga resolt. Si envida, el truc queda diferit
+    // (deferredTruc) i es resoldrà l'envit primer.
+    const firstTrick0 = r.tricks[0];
+    const playerHasPlayed0 = !!firstTrick0 && firstTrick0.cards.some((tc) => tc.player === player);
+    if (
+      !r.envitResolved &&
+      r.envitState.kind === "none" &&
+      r.tricks.length === 1 &&
+      !playerHasPlayed0
+    ) {
+      acts.push({ type: "shout", what: "envit" });
+      acts.push({ type: "shout", what: "falta-envit" });
+    }
     return acts;
   }
 
