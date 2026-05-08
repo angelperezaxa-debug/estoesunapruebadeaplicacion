@@ -1282,7 +1282,10 @@ export function useTrucMatch(options: UseTrucMatchOptions = {}) {
         const partnerEnvit = playerTotalEnvit(r, partner);
         const trapPartner = partnerEnvit >= 32 && Math.random() < 0.75;
         if (!trapPartner && partnerEnvit >= 30) {
-          const instruction: ChatPhraseId = partnerEnvit >= 33 ? "tira-falta" : "envida";
+          // El bot primer de la parella en la 1a baza sempre diu "Envida!"
+          // (mai "Tira la falta!"), encara que tinga 33: és més probable que
+          // el rival accepte l'envit simple i així es guanyen més pedres.
+          const instruction: ChatPhraseId = "envida";
           partnerBotTimer = window.setTimeout(() => {
             sayRef.current?.(partner, instruction, bubbleDurationMs);
             window.setTimeout(() => finalize(instruction), CONSULT_DECIDE_DELAY_MS);
@@ -1843,7 +1846,10 @@ export function useTrucMatch(options: UseTrucMatchOptions = {}) {
     if (partnerEnvitHintRef.current === hintKey) return;
     partnerEnvitHintRef.current = hintKey;
 
-    const instruction: ChatPhraseId = partnerEnvit >= 33 ? "tira-falta" : "envida";
+    // El bot primer de la parella en la 1a baza sempre diu "Envida!" (mai
+    // "Tira la falta!"), encara que tinga 33: és més probable que el rival
+    // accepte l'envit simple i així es guanyen més pedres.
+    const instruction: ChatPhraseId = "envida";
     const t = window.setTimeout(() => {
       sayRef.current?.(partner, instruction);
     }, PARTNER_BOT_INSTRUCTION_DELAY_MS);

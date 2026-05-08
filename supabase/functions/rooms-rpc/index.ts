@@ -823,7 +823,10 @@ async function decideOnlineBotAction(
       const partnerEnvit = playerTotalEnvit(r, partner);
       const trapPartner = partnerEnvit >= 32 && Math.random() < 0.75;
       if (!trapPartner && partnerEnvit >= 30) {
-        const instruction: ChatPhraseId = partnerEnvit >= 33 ? "tira-falta" : "envida";
+        // El bot primer de la parella en la 1a baza sempre diu "Envida!"
+        // (mai "Tira la falta!"), encara que tinga 33: és més probable que
+        // el rival accepte l'envit simple i així es guanyen més pedres.
+        const instruction: ChatPhraseId = "envida";
         return scheduleBotFlow(intents, { id: flowId, actor, kind: "second-wait", dueAt: dueIso(PARTNER_BOT_INSTRUCTION_DELAY_MS), payload: { stage: "partner-instruction", partner, instruction } });
       }
     }
