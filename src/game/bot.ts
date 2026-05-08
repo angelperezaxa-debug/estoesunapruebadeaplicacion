@@ -1159,14 +1159,20 @@ function decideProactiveTruc(
           const trucAct = legal.find(
             (a) => a.type === "shout" && a.what === "truc",
           );
-          if (trucAct) {
+          if (trucAct && !hints.silentTruc) {
+            // Probabilitat 80% (abans determinista 100%): cantem truc abans
+            // de tirar la carta guanyadora/parda en la 3a baza, però amb un
+            // 20% de variabilitat per a no resultar mecànic.
+            const p = 0.8;
+            const decision = Math.random() < p ? "truc" : "passa";
             // eslint-disable-next-line no-console
             console.log(
-              `[bot truc 3a-baza-determinista] p${player} truc ` +
+              `[bot truc 3a-baza-determinista] p${player} ${decision} ` +
                 `outcome=${outcome} myBest=${myBest} tableBest=${tableBest} ` +
-                `won0=${won0} won1=${won1} parda0=${parda0} parda1=${parda1}`,
+                `won0=${won0} won1=${won1} parda0=${parda0} parda1=${parda1} ` +
+                `prob=${p.toFixed(2)}`,
             );
-            return trucAct;
+            if (decision === "truc") return trucAct;
           }
         }
       }
