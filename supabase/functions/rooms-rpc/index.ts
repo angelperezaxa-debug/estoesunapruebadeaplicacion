@@ -857,6 +857,44 @@ async function decideOnlineBotAction(
     return action ? scheduleBotFlow(intents, { id: flowId, actor, kind: "action", dueAt: dueIso(decideDelayMs), payload: { action } }) : null;
   }
 
+  // Fast-path: davant d'un envit del rival (no falta), si el bot té 33
+  // d'envit o 32 essent mà sobre el caller, RENVIDA directament sense
+  // consultar el company.
+  if (
+    firstPendingResponseActor(state, actor) &&
+    r.envitState.kind === "pending" &&
+    r.envitState.level !== "falta"
+  ) {
+    const myEnvitNow = playerTotalEnvit(r, actor);
+    const acts = legalActions(state, actor);
+    const renvitAct = acts.find(
+      (a) => a.type === "shout" && (a.what === "renvit" || a.what === "falta-envit"),
+    );
+    const partnerSeat = partnerOf(actor);
+    const partnerRejected = (r.envitState.rejectedBy ?? []).includes(partnerSeat);
+    let manoPriorityOverCaller = false;
+    const callerEnv = r.envitState.calledBy;
+    let pm: PlayerId = r.mano;
+    for (let i = 0; i < 4; i++) {
+      if (pm === actor) { manoPriorityOverCaller = true; break; }
+      if (pm === callerEnv) { manoPriorityOverCaller = false; break; }
+      pm = ((pm + 1) % 4) as PlayerId;
+    }
+    const shouldRenvitDirect =
+      !!renvitAct &&
+      !partnerRejected &&
+      (myEnvitNow >= 33 || (myEnvitNow === 32 && manoPriorityOverCaller));
+    if (shouldRenvitDirect) {
+      return scheduleBotFlow(intents, {
+        id: flowId,
+        actor,
+        kind: "action",
+        dueAt: dueIso(decideDelayMs),
+        payload: { action: renvitAct },
+      });
+    }
+  }
+
   const shouldConsult =
     (isPlayCardTurn(state, actor) || firstPendingResponseActor(state, actor)) &&
     shouldConsultPartner(state, actor, tuning);
