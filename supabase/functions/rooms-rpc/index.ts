@@ -307,6 +307,7 @@ interface BotIntents {
       | "consult-answer"
       | "consult-decide"
       | "second-wait"
+      | "truc-envit-wait"
       | "opener-wait"
       | "peu-info"
       | "round-end";
