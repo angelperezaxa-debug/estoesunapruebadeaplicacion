@@ -2030,15 +2030,18 @@ function choosePlayCard(
     if (partnerAdvice === "three") {
       // El company ha respost "Tinc un 3" (té un 3, sense carta top
       // confirmada). Si jo, com a primer de la pareja en obrir la baza,
-      // tinc un 3 i a més una carta top (str ≥ 85: 7 oros, 7 espases,
-      // As bastos, As espases), obre amb la carta top per pressionar i
-      // reserve el meu 3 per a una baza posterior. La mesa està buida
-      // (sóc primer), així que la carta top "guanya" trivialment.
+      // tinc un 3 i a més un AS DE BASTOS o AS D'ESPASES, obre amb eixa
+      // as: és més probable que així guanyem el truc (el company pot
+      // arribar amb el seu 3 i nosaltres reservem el nostre 3). Si la
+      // meua carta top és una manilla (7 oros/espases), preferixo
+      // reservar-la i tirar la baixa, perquè la manilla val més que un as.
       const myThreesAdv = cards.filter((c) => c.rank === 3);
-      const myTops = cards.filter((c) => cardStrength(c) >= 85);
-      if (myThreesAdv.length >= 1 && myTops.length >= 1) {
-        const topPick = myTops.sort((a, b) => cardStrength(a) - cardStrength(b))[0]!;
-        const matchAct = playActions.find((a) => a.cardId === topPick.id);
+      const myAces = cards.filter(
+        (c) => c.rank === 1 && (c.suit === "bastos" || c.suit === "espases"),
+      );
+      if (myThreesAdv.length >= 1 && myAces.length >= 1) {
+        const acePick = myAces.sort((a, b) => cardStrength(a) - cardStrength(b))[0]!;
+        const matchAct = playActions.find((a) => a.cardId === acePick.id);
         if (matchAct) return matchAct;
       }
       // Si no, comportament equivalent a "strong": tira baixa per reservar.
