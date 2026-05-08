@@ -1262,38 +1262,70 @@ function decideProactiveTruc(
     // strongerThanMe === 1 → quasi-millor: truc selectiu.
     // strongerThanMe >= 2 → no tinc avantatge real: no truques per açò.
     if (strongerThanMe === 0) {
-      // Regla dura: en l'última baza, si tinc la carta més alta de les
-      // que queden per jugar, he de cantar truc abans de tirar-la
-      // (sempre que siga legal i no estiga en mode silenci). No depèn
-      // de la posició de bazas: encara que vaja darrere 0-1, fer parda
-      // o guanyar amb la millor carta restant em garanteix sumar
-      // pedres si el rival rebutja, o pujar la posta sobre una baza
-      // que tinc encarada.
+      // En l'última baza, si tinc la carta més alta de les que queden per
+      // jugar, canto truc en un 80% dels casos abans de tirar-la (sempre
+      // que siga legal i no estiga en mode silenci). El 20% restant
+      // afegeix variabilitat per no resultar mecànic.
       const legal = legalActions(m, player);
       const trucAct = legal.find(
         (a) => a.type === "shout" && a.what === "truc",
       );
       if (trucAct && !hints.silentTruc) {
-        logTrucDecision("3a-baza-millor-obligatori", 1, "truc");
-        return trucAct;
+        const p = 0.8;
+        const decision = Math.random() < p ? "truc" : "passa";
+        logTrucDecision("3a-baza-millor", p, decision);
+        if (decision === "truc") return trucAct;
       }
     }
 
     if (strongerThanMe === 1) {
-      // Una sola carta em pot superar; encara és arriscat però defensable
-      // si la situació demana punts. Considerem trucar fins i tot si anem
-      // darrere de bazas (0-1): tenim la 2a millor carta restant i pot
-      // valer la pena pujar la posta.
-      let p = winningTrickPosition ? 0.35 : 0.25;
-      if (losingBig) p = winningTrickPosition ? 0.65 : 0.55;
-      else if (closeToWin) p = winningTrickPosition ? 0.55 : 0.45;
-      else if (winningBig) p = winningTrickPosition ? 0.15 : 0.1;
-      p *= tuning.callPropensity;
-      if (Math.random() < p) {
-        logTrucDecision("3a-baza-quasi-millor", p, "truc");
-        return { type: "shout", what: "truc" };
+      // Tinc la SEGONA carta més alta de les que queden per jugar. Aplica
+      // la regla 80% només si la meua carta pot guanyar a totes les ja
+      // jugades en aquesta 3a baza (o si el meu company ja les guanya,
+      // cas en què igualment val la pena pujar la posta). Si encara no
+      // hi ha cap carta a la mesa (sóc el primer de la baza), també
+      // s'aplica perquè no puc perdre contra res ja vist.
+      const ct = currentTrick;
+      const tableCards = ct ? ct.cards : [];
+      const myHandCards3 = r.hands[player] ?? [];
+      const myBest3 = myHandCards3.length > 0
+        ? Math.max(...myHandCards3.map((c) => cardStrength(c)))
+        : -1;
+      const tableLeader3 = tableCards.reduce(
+        (best, tc) =>
+          best === null || cardStrength(tc.card) > cardStrength(best.card) ? tc : best,
+        null as { player: PlayerId; card: Card } | null,
+      );
+      const tableBest3 = tableLeader3 ? cardStrength(tableLeader3.card) : -1;
+      const partnerWinsTable3 =
+        tableLeader3 !== null && teamOf(tableLeader3.player) === teamOf(player);
+      const beatsPlayed = tableCards.length === 0 || partnerWinsTable3 || myBest3 > tableBest3;
+
+      if (beatsPlayed) {
+        const legal = legalActions(m, player);
+        const trucAct = legal.find(
+          (a) => a.type === "shout" && a.what === "truc",
+        );
+        if (trucAct && !hints.silentTruc) {
+          const p = 0.8;
+          const decision = Math.random() < p ? "truc" : "passa";
+          logTrucDecision("3a-baza-segona-millor-guanya-mesa", p, decision);
+          if (decision === "truc") return trucAct;
+        }
+      } else {
+        // Si no pot guanyar a les cartes ja jugades, manté l'heurística
+        // anterior més conservadora.
+        let p = winningTrickPosition ? 0.35 : 0.25;
+        if (losingBig) p = winningTrickPosition ? 0.65 : 0.55;
+        else if (closeToWin) p = winningTrickPosition ? 0.55 : 0.45;
+        else if (winningBig) p = winningTrickPosition ? 0.15 : 0.1;
+        p *= tuning.callPropensity;
+        if (Math.random() < p) {
+          logTrucDecision("3a-baza-quasi-millor", p, "truc");
+          return { type: "shout", what: "truc" };
+        }
+        logTrucDecision("3a-baza-quasi-millor", p, "passa");
       }
-      logTrucDecision("3a-baza-quasi-millor", p, "passa");
       // Si no truca, segueix amb la lògica normal sota.
     }
   }
