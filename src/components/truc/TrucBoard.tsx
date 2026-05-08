@@ -2079,6 +2079,26 @@ export function TrucBoard(props: TrucBoardProps) {
               }
             }
 
+            // Amaga el botó de Truc/Retruc/Quatre val/Joc fora si: hem
+            // guanyat la 1a baza, l'humà és l'últim a tirar a la 3a baza
+            // (3 cartes ja jugades i el seu torn) i la 3a baza ja està
+            // guanyada o empardada pel nostre equip (la millor carta
+            // jugada pertany al nostre equip o empata amb la del rival).
+            let hideTruc3rd = false;
+            if (isTrucCall && wonFirstTrick && r.tricks.length === 3) {
+              const trick3 = r.tricks[2];
+              const cards3 = trick3?.cards ?? [];
+              const humanPlayed3 = cards3.some((tc) => tc.player === HUMAN);
+              if (cards3.length === 3 && !humanPlayed3 && r.turn === HUMAN) {
+                const maxStr = Math.max(...cards3.map((tc) => cardStrength(tc.card)));
+                const ourTeamHasMax = cards3.some(
+                  (tc) => teamOf(tc.player) === humanTeam && cardStrength(tc.card) === maxStr,
+                );
+                if (ourTeamHasMax) hideTruc3rd = true;
+              }
+            }
+            if (hideTruc3rd) return null;
+
             return (
               <ShoutButton
                 key={a.what}
