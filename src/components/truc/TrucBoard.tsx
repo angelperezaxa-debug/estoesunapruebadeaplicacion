@@ -2079,22 +2079,33 @@ export function TrucBoard(props: TrucBoardProps) {
               }
             }
 
-            // Amaga el botó de Truc/Retruc/Quatre val/Joc fora si: hem
-            // guanyat la 1a baza, l'humà és l'últim a tirar a la 3a baza
-            // (3 cartes ja jugades i el seu torn) i la 3a baza ja està
-            // guanyada o empardada pel nostre equip (la millor carta
-            // jugada pertany al nostre equip o empata amb la del rival).
+            // Amaga el botó de Truc/Retruc/Quatre val/Joc fora només quan
+            // a la 3a baza el nostre equip JA TÉ guanyat el truc:
+            //  - Som l'últim a tirar (3 cartes a la mesa, és el nostre torn).
+            //  - I el nostre equip lidera ESTRICTAMENT la mesa (la nostra
+            //    millor carta supera la millor del rival), cas en què
+            //    guanyem la 3a baza segur.
+            //  - O bé la 3a baza està en EMPAT entre equips (parda) i hem
+            //    guanyat la 1a: parda 3a + winner 1a = guanyem el truc.
+            // Si el rival lidera estrictament la mesa, el botó es manté
+            // visible: encara que perdem la baza podem trucar per veure si
+            // el rival vol o no (i guanyar punts si diu "no vull").
             let hideTruc3rd = false;
-            if (isTrucCall && wonFirstTrick && r.tricks.length === 3) {
+            if (isTrucCall && r.tricks.length === 3) {
               const trick3 = r.tricks[2];
               const cards3 = trick3?.cards ?? [];
               const humanPlayed3 = cards3.some((tc) => tc.player === HUMAN);
               if (cards3.length === 3 && !humanPlayed3 && r.turn === HUMAN) {
-                const maxStr = Math.max(...cards3.map((tc) => cardStrength(tc.card)));
-                const ourTeamHasMax = cards3.some(
-                  (tc) => teamOf(tc.player) === humanTeam && cardStrength(tc.card) === maxStr,
-                );
-                if (ourTeamHasMax) hideTruc3rd = true;
+                const ourMaxStr = cards3
+                  .filter((tc) => teamOf(tc.player) === humanTeam)
+                  .reduce((m, tc) => Math.max(m, cardStrength(tc.card)), -1);
+                const oppMaxStr = cards3
+                  .filter((tc) => teamOf(tc.player) !== humanTeam)
+                  .reduce((m, tc) => Math.max(m, cardStrength(tc.card)), -1);
+                const ourStrictlyLeads = ourMaxStr > oppMaxStr;
+                const tiedBetweenTeams = ourMaxStr >= 0 && ourMaxStr === oppMaxStr;
+                if (ourStrictlyLeads) hideTruc3rd = true;
+                else if (tiedBetweenTeams && wonFirstTrick) hideTruc3rd = true;
               }
             }
             if (hideTruc3rd) return null;
