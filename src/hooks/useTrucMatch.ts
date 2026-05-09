@@ -882,13 +882,13 @@ export function useTrucMatch(options: UseTrucMatchOptions = {}) {
               if (renvit) { dispatch(botPlayer, renvit); return; }
             }
             // Si el company diu "no" a "Vols tornar a envidar?", el bot
-            // ha de rebutjar l'envit del rival amb "No vull" (no té sentit
-            // acceptar quan el company ja ha indicat que no en té).
+            // accepta l'envit del rival amb "Vull" (el bot té envit suficient
+            // per voler-lo, simplement el company no en té prou per renvidar).
             if (instruction === "no") {
-              const noVull = legalActions(matchRef.current, botPlayer).find(
-                (a) => a.type === "shout" && a.what === "no-vull",
+              const vull = legalActions(matchRef.current, botPlayer).find(
+                (a) => a.type === "shout" && a.what === "vull",
               );
-              if (noVull) { dispatch(botPlayer, noVull); return; }
+              if (vull) { dispatch(botPlayer, vull); return; }
             }
             // Altrament, decisió normal d'envit.
             const hints = buildHints();
