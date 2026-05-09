@@ -1839,14 +1839,14 @@ export function TrucBoard(props: TrucBoardProps) {
                   <ShoutBadge
                     what={envitShoutByPlayer[PARTNER] as ShoutKind}
                     labelOverride={envitShoutLabelByPlayer?.[PARTNER] ?? undefined}
-                    quiet={!!envitOutcomeByPlayer?.[PARTNER] && envitOutcomeByPlayer[PARTNER]!.outcome !== "pending"}
+                    quiet={(() => { const _o = effectiveEnvitOutcome(PARTNER); return !!_o && _o !== "pending"; })()}
                   />
-                  {envitOutcomeByPlayer?.[PARTNER] && (
+                  {(() => { const _o = effectiveEnvitOutcome(PARTNER); return _o ? (
                     <EnvitOutcomeMark
-                      outcome={envitOutcomeByPlayer[PARTNER]!.outcome}
+                      outcome={_o}
                       className="absolute left-full top-1/2 -translate-y-1/2 ml-0"
                     />
-                  )}
+                  ) : null; })()}
                 </div>
               </div>
             )}
@@ -1857,9 +1857,9 @@ export function TrucBoard(props: TrucBoardProps) {
                   <ShoutBadge
                     what={lastShoutByPlayer[PARTNER] as ShoutKind}
                     labelOverride={shoutLabelByPlayer[PARTNER] ?? undefined}
-                    quiet={acceptedShoutByPlayer[PARTNER]}
+                    quiet={effectiveAcceptedShout(PARTNER)}
                   />
-                  {acceptedShoutByPlayer[PARTNER] && (
+                  {effectiveAcceptedShout(PARTNER) && (
                     <EnvitOutcomeMark
                       outcome="volgut"
                       className="absolute left-full top-1/2 -translate-y-1/2 ml-[-4px]"
@@ -1894,14 +1894,14 @@ export function TrucBoard(props: TrucBoardProps) {
                   <ShoutBadge
                     what={envitShoutByPlayer[LEFT] as ShoutKind}
                     labelOverride={envitShoutLabelByPlayer?.[LEFT] ?? undefined}
-                    quiet={!!envitOutcomeByPlayer?.[LEFT] && envitOutcomeByPlayer[LEFT]!.outcome !== "pending"}
+                    quiet={(() => { const _o = effectiveEnvitOutcome(LEFT); return !!_o && _o !== "pending"; })()}
                   />
-                  {envitOutcomeByPlayer?.[LEFT] && (
+                  {(() => { const _o = effectiveEnvitOutcome(LEFT); return _o ? (
                     <EnvitOutcomeMark
-                      outcome={envitOutcomeByPlayer[LEFT]!.outcome}
+                      outcome={_o}
                       className="absolute left-full top-1/2 -translate-y-1/2 ml-0"
                     />
-                  )}
+                  ) : null; })()}
                 </div>
               </div>
             )}
@@ -1911,9 +1911,9 @@ export function TrucBoard(props: TrucBoardProps) {
                   <ShoutBadge
                     what={lastShoutByPlayer[LEFT] as ShoutKind}
                     labelOverride={shoutLabelByPlayer[LEFT] ?? undefined}
-                    quiet={acceptedShoutByPlayer[LEFT]}
+                    quiet={effectiveAcceptedShout(LEFT)}
                   />
-                  {acceptedShoutByPlayer[LEFT] && (
+                  {effectiveAcceptedShout(LEFT) && (
                     <EnvitOutcomeMark
                       outcome="volgut"
                       className="absolute left-full top-1/2 -translate-y-1/2 ml-[-4px]"
@@ -1941,14 +1941,14 @@ export function TrucBoard(props: TrucBoardProps) {
                   <ShoutBadge
                     what={envitShoutByPlayer[RIGHT] as ShoutKind}
                     labelOverride={envitShoutLabelByPlayer?.[RIGHT] ?? undefined}
-                    quiet={!!envitOutcomeByPlayer?.[RIGHT] && envitOutcomeByPlayer[RIGHT]!.outcome !== "pending"}
+                    quiet={(() => { const _o = effectiveEnvitOutcome(RIGHT); return !!_o && _o !== "pending"; })()}
                   />
-                  {envitOutcomeByPlayer?.[RIGHT] && (
+                  {(() => { const _o = effectiveEnvitOutcome(RIGHT); return _o ? (
                     <EnvitOutcomeMark
-                      outcome={envitOutcomeByPlayer[RIGHT]!.outcome}
+                      outcome={_o}
                       className="absolute right-full top-1/2 -translate-y-1/2 mr-0"
                     />
-                  )}
+                  ) : null; })()}
                 </div>
               </div>
             )}
@@ -1958,9 +1958,9 @@ export function TrucBoard(props: TrucBoardProps) {
                   <ShoutBadge
                     what={lastShoutByPlayer[RIGHT] as ShoutKind}
                     labelOverride={shoutLabelByPlayer[RIGHT] ?? undefined}
-                    quiet={acceptedShoutByPlayer[RIGHT]}
+                    quiet={effectiveAcceptedShout(RIGHT)}
                   />
-                  {acceptedShoutByPlayer[RIGHT] && (
+                  {effectiveAcceptedShout(RIGHT) && (
                     <EnvitOutcomeMark
                       outcome="volgut"
                       className="absolute right-full top-1/2 -translate-y-1/2 mr-[-4px]"
@@ -2197,14 +2197,14 @@ export function TrucBoard(props: TrucBoardProps) {
                     <ShoutBadge
                       what={envitShoutByPlayer[HUMAN] as ShoutKind}
                       labelOverride={envitShoutLabelByPlayer?.[HUMAN] ?? undefined}
-                      quiet={!!envitOutcomeByPlayer?.[HUMAN] && envitOutcomeByPlayer[HUMAN]!.outcome !== "pending"}
+                      quiet={(() => { const _o = effectiveEnvitOutcome(HUMAN); return !!_o && _o !== "pending"; })()}
                     />
-                    {envitOutcomeByPlayer?.[HUMAN] && (
-                      <EnvitOutcomeMark
-                        outcome={envitOutcomeByPlayer[HUMAN]!.outcome}
-                        className="absolute left-full top-1/2 -translate-y-1/2 ml-0"
-                      />
-                    )}
+                    {(() => { const _o = effectiveEnvitOutcome(HUMAN); return _o ? (
+                    <EnvitOutcomeMark
+                      outcome={_o}
+                      className="absolute left-full top-1/2 -translate-y-1/2 ml-0"
+                    />
+                  ) : null; })()}
                   </div>
                 </div>
               )}
@@ -2214,9 +2214,9 @@ export function TrucBoard(props: TrucBoardProps) {
                     <ShoutBadge
                       what={lastShoutByPlayer[HUMAN] as ShoutKind}
                       labelOverride={shoutLabelByPlayer[HUMAN] ?? undefined}
-                      quiet={acceptedShoutByPlayer[HUMAN]}
+                      quiet={effectiveAcceptedShout(HUMAN)}
                     />
-                    {acceptedShoutByPlayer[HUMAN] && (
+                    {effectiveAcceptedShout(HUMAN) && (
                       <EnvitOutcomeMark
                         outcome="volgut"
                         className="absolute left-full top-1/2 -translate-y-1/2 ml-[-4px]"
