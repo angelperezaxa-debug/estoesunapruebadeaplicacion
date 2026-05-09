@@ -332,17 +332,21 @@ export function TrucBoard(props: TrucBoardProps) {
     }
   }, [match.history.length]);
   useEffect(() => {
+    const list = (shoutFlashes && shoutFlashes.length > 0)
+      ? shoutFlashes
+      : (shoutFlash ? [shoutFlash] : []);
     let next: Record<PlayerId, "vull" | "no-vull" | null> | null = null;
-    for (const m of messages) {
-      if (m.phraseId === "vull" || m.phraseId === "no-vull") {
-        if (respondersSeen[m.player] !== m.phraseId) {
+    for (const f of list) {
+      if ((f.what === "vull" || f.what === "no-vull") && f.player !== undefined) {
+        const w = f.what as "vull" | "no-vull";
+        if (respondersSeen[f.player] !== w) {
           if (!next) next = { ...respondersSeen };
-          next[m.player] = m.phraseId;
+          next[f.player] = w;
         }
       }
     }
     if (next) setRespondersSeen(next);
-  }, [messages, respondersSeen]);
+  }, [shoutFlash, shoutFlashes, respondersSeen]);
   // Saber si podem mostrar la marca V/X d'un cantador: cal que algun
   // rival haja mostrat ja el bocadillo "Vull" o "No vull" en la ronda.
   const opponentRespondedSeen = (caller: PlayerId): boolean => {
