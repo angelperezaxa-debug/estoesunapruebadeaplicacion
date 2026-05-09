@@ -606,8 +606,8 @@ async function decideOnlineBotAction(
             partner,
             advice: adviceFromAnswer(answer, question),
             // Si el company respon "no" a "Vols tornar a envidar?", el bot
-            // ha de rebutjar l'envit del rival (no té sentit acceptar).
-            forceNoVull: question === "vols-tornar-envidar" && answer === "no",
+            // accepta l'envit del rival amb "Vull" (té envit suficient).
+            forceVull: question === "vols-tornar-envidar" && answer === "no",
           },
         });
         return null;
@@ -615,11 +615,11 @@ async function decideOnlineBotAction(
       case "consult-decide": {
         clearBotFlow(intents);
         const advice = coerceAdvice(payload.advice);
-        if (payload.forceNoVull === true) {
-          const noVull = legalActions(state, actor).find(
-            (a) => a.type === "shout" && a.what === "no-vull",
+        if (payload.forceVull === true) {
+          const vull = legalActions(state, actor).find(
+            (a) => a.type === "shout" && a.what === "vull",
           );
-          if (noVull) return noVull;
+          if (vull) return vull;
         }
         return botDecide(state, actor, advice, hintsForBot(intents, actor), tuning, bluffRate);
       }
