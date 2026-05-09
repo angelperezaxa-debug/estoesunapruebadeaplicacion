@@ -318,6 +318,39 @@ export function TrucBoard(props: TrucBoardProps) {
     ells: { ...match.scores.ells },
   }));
   const [displayedCames, setDisplayedCames] = useState(() => ({ ...match.camesWon }));
+  // Set de jugadors que han mostrat el bocadillo "Vull" o "No vull" en la
+  // ronda actual. S'usa per retardar la V verda / X roja dels carteles de
+  // truc i envit fins que la resposta del rival és visible al tauler.
+  const [respondersSeen, setRespondersSeen] = useState<Record<PlayerId, "vull" | "no-vull" | null>>({
+    0: null, 1: null, 2: null, 3: null,
+  });
+  const respondersRoundRef = useRef<number>(match.history.length);
+  useEffect(() => {
+    if (respondersRoundRef.current !== match.history.length) {
+      respondersRoundRef.current = match.history.length;
+      setRespondersSeen({ 0: null, 1: null, 2: null, 3: null });
+    }
+  }, [match.history.length]);
+  useEffect(() => {
+    let next: Record<PlayerId, "vull" | "no-vull" | null> | null = null;
+    for (const m of messages) {
+      if (m.phraseId === "vull" || m.phraseId === "no-vull") {
+        if (respondersSeen[m.player] !== m.phraseId) {
+          if (!next) next = { ...respondersSeen };
+          next[m.player] = m.phraseId;
+        }
+      }
+    }
+    if (next) setRespondersSeen(next);
+  }, [messages, respondersSeen]);
+  // Saber si podem mostrar la marca V/X d'un cantador: cal que algun
+  // rival haja mostrat ja el bocadillo "Vull" o "No vull" en la ronda.
+  const opponentRespondedSeen = (caller: PlayerId): boolean => {
+    const callerTeam = teamOf(caller);
+    return ([0, 1, 2, 3] as PlayerId[]).some(
+      (p) => teamOf(p) !== callerTeam && respondersSeen[p] !== null,
+    );
+  };
   const scoreToastHideTimerRef = useRef<number | null>(null);
   const lastHistoryLenForScoreRef = useRef(match.history.length);
   const pendingRoundResolutionRef = useRef<{
