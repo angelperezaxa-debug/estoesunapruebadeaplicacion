@@ -615,11 +615,11 @@ async function decideOnlineBotAction(
       case "consult-decide": {
         clearBotFlow(intents);
         const advice = coerceAdvice(payload.advice);
-        if (payload.forceNoVull === true) {
-          const noVull = legalActions(state, actor).find(
-            (a) => a.type === "shout" && a.what === "no-vull",
+        if (payload.forceVull === true) {
+          const vull = legalActions(state, actor).find(
+            (a) => a.type === "shout" && a.what === "vull",
           );
-          if (noVull) return noVull;
+          if (vull) return vull;
         }
         return botDecide(state, actor, advice, hintsForBot(intents, actor), tuning, bluffRate);
       }
