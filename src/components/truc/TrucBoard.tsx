@@ -369,7 +369,24 @@ export function TrucBoard(props: TrucBoardProps) {
       scoreToastHideTimerRef.current = null;
     }
   };
-
+  // Outcome efectiu del cartell d'envit per a un cantador: si encara no
+  // s'ha vist el cartell central de "Vull" / "No vull" del rival, retorna
+  // "pending" (no es pinta marca i el cartell continua pulsant).
+  const effectiveEnvitOutcome = (
+    p: PlayerId,
+  ): "pending" | "volgut" | "no-volgut" | null => {
+    const o = envitOutcomeByPlayer?.[p];
+    if (!o) return null;
+    if (o.outcome === "pending") return "pending";
+    if (!opponentRespondedSeen(p)) return "pending";
+    return o.outcome;
+  };
+  // V verda del truc: només es pinta una vegada s'ha vist el cartell
+  // central "Vull" del rival.
+  const effectiveAcceptedShout = (p: PlayerId): boolean => {
+    if (!acceptedShoutByPlayer[p]) return false;
+    return opponentRespondedSeen(p);
+  };
   const commitScoreDisplay = (nextScores: typeof match.scores, nextCames: typeof match.camesWon) => {
     // Evita re-renders innecessaris: si els valors són idèntics als
     // mostrats actualment, no fem setState. Aquesta funció es crida en
