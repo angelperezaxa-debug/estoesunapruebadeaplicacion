@@ -606,8 +606,8 @@ async function decideOnlineBotAction(
             partner,
             advice: adviceFromAnswer(answer, question),
             // Si el company respon "no" a "Vols tornar a envidar?", el bot
-            // ha de rebutjar l'envit del rival (no té sentit acceptar).
-            forceNoVull: question === "vols-tornar-envidar" && answer === "no",
+            // accepta l'envit del rival amb "Vull" (té envit suficient).
+            forceVull: question === "vols-tornar-envidar" && answer === "no",
           },
         });
         return null;
